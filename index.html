@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>讀書紀錄</title>
+<meta name="theme-color" content="#2d5a3d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="讀書紀錄">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f1ec;
+  --surface: #fff;
+  --ink: #1a1a18;
+  --muted: #8a8680;
+  --accent: #2d5a3d;
+  --accent-light: #e8f0eb;
+  --accent-dark: #1e3f2b;
+  --border: #e2ddd6;
+  --done-bg: #f7f5f0;
+  --done-border: #b8b3aa;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Noto Sans TC', sans-serif;
+}
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); min-height: 100vh; padding: 40px 16px 80px; }
+
+/* Header */
+.header { max-width: 600px; margin: 0 auto 32px; }
+.header-label { font-family: var(--mono); font-size: 10px; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+.header h1 { font-size: 26px; font-weight: 300; letter-spacing: -.02em; }
+.header h1 span { color: var(--accent); font-weight: 500; }
+
+/* Stats */
+.stats-bar { max-width: 600px; margin: 0 auto 24px; display: flex; gap: 1px; background: var(--border); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); }
+.stat-item { flex: 1; background: var(--surface); padding: 12px 10px; }
+.stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: 3px; }
+.stat-value { font-family: var(--mono); font-size: 15px; color: var(--ink); }
+
+/* Add panel */
+.panel { max-width: 600px; margin: 0 auto 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.panel-header { padding: 13px 18px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.panel-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Inputs */
+input[type="text"], textarea, input[type="number"] {
+  border: 1px solid var(--border); background: var(--bg);
+  border-radius: 3px; color: var(--ink); outline: none; transition: border-color .15s;
+}
+input[type="text"] { width: 100%; padding: 10px 13px; font-family: var(--sans); font-size: 14px; }
+input[type="text"]:focus { border-color: var(--accent); }
+input[type="text"]::placeholder { color: var(--muted); }
+textarea { width: 100%; padding: 10px 13px; resize: vertical; min-height: 68px; line-height: 1.6; font-family: var(--sans); font-size: 14px; }
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted); }
+input[type="number"] { width: 76px; padding: 9px 8px; text-align: center; font-family: var(--mono); font-size: 13px; }
+input[type="number"]:focus { border-color: var(--accent); }
+
+/* Buttons */
+.btn { background: var(--accent); color: #fff; border: none; border-radius: 3px; padding: 10px 16px; font-family: var(--mono); font-size: 12px; letter-spacing: .05em; cursor: pointer; transition: opacity .15s; white-space: nowrap; width: 100%; display: block; }
+.btn:hover { opacity: .85; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--ink); border-color: var(--muted); opacity: 1; }
+.btn-sm { padding: 6px 11px; font-size: 11px; width: auto; display: inline-block; }
+.btn-dark { background: var(--ink); }
+
+/* Book list */
+.books-container { max-width: 600px; margin: 0 auto; }
+.section-label { font-family: var(--mono); font-size: 10px; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+
+/* Book card */
+.book-card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 10px; overflow: hidden; transition: box-shadow .15s; }
+.book-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.book-card.done { background: var(--done-bg); border-color: var(--done-border); }
+
+/* Collapsed row */
+.book-row { display: flex; align-items: center; gap: 10px; padding: 14px 14px 14px 18px; cursor: pointer; user-select: none; }
+.book-row:hover { background: rgba(0,0,0,.015); }
+.book-idx { font-family: var(--mono); font-size: 10px; color: var(--muted); min-width: 20px; flex-shrink: 0; }
+.book-info { flex: 1; min-width: 0; }
+.book-title { font-size: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+.book-card.done .book-title { color: var(--muted); text-decoration: line-through; }
+.book-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+.chip { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.chip.green { color: var(--accent); }
+.chip.done-tag { color: var(--done-border); font-weight: 500; }
+.row-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.chevron { font-size: 10px; color: var(--muted); transition: transform .2s; display: inline-block; }
+.chevron.open { transform: rotate(180deg); }
+
+/* Expanded detail */
+.book-detail { border-top: 1px solid var(--border); }
+
+/* Sub-section label */
+.sub-label { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+
+/* Check-in */
+.checkin-strip { padding: 13px 18px; background: var(--accent-light); display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
+.checkin-info { flex: 1; }
+.checkin-label { font-size: 13px; color: var(--accent-dark); font-weight: 500; margin-bottom: 2px; }
+.checkin-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.btn-checkin { background: var(--accent); color: #fff; border: none; border-radius: 3px; padding: 9px 15px; font-family: var(--mono); font-size: 11px; cursor: pointer; white-space: nowrap; transition: opacity .15s; }
+.btn-checkin:hover { opacity: .85; }
+.btn-checkin.checked { background: var(--border); color: var(--muted); cursor: default; }
+
+/* Input sections */
+.section-wrap { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+.page-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.page-row label { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* Day dots */
+.dots-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.dot { width: 32px; height: 32px; border-radius: 3px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 9px; color: #fff; position: relative; }
+.dot:hover .dot-tip { display: block; }
+.dot-tip { display: none; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; font-family: var(--mono); font-size: 9px; padding: 3px 7px; border-radius: 3px; white-space: nowrap; z-index: 10; }
+
+/* Quote / reflection items */
+.item-list { }
+.list-item { padding: 11px 0; border-bottom: 1px solid var(--border); }
+.list-item:last-child { border-bottom: none; }
+.item-meta { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+.item-meta.reflect { color: #7a5c2e; }
+.item-text { font-size: 13px; line-height: 1.65; color: var(--ink); }
+.item-del { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; }
+.item-del:hover { color: #c0392b; }
+.list-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 16px 0; }
+
+/* Inline edit */
+.edit-wrap { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.edit-wrap textarea { min-height: 56px; font-size: 13px; }
+.edit-actions { display: flex; gap: 8px; }
+.btn-save { background: var(--accent); color: #fff; border: none; border-radius: 3px; padding: 6px 14px; font-family: var(--mono); font-size: 11px; cursor: pointer; }
+.btn-save:hover { opacity: .85; }
+.btn-cancel { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 3px; padding: 6px 14px; font-family: var(--mono); font-size: 11px; cursor: pointer; }
+.btn-cancel:hover { color: var(--ink); }
+.item-edit-btn { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; margin-right: 12px; }
+.item-edit-btn:hover { color: var(--accent); }
+
+/* Finish row */
+.finish-row { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+
+/* Empty state */
+.empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty-icon { font-size: 36px; margin-bottom: 12px; }
+.empty-text { font-size: 14px; font-weight: 300; }
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(26,26,24,.55); z-index: 100;
+  align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--surface); width: 100%; max-width: 600px;
+  border-radius: 12px 12px 0 0; max-height: 88vh; overflow-y: auto;
+  padding: 28px 22px 40px; animation: slideUp .25s ease;
+}
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 24px; }
+.modal-badge { display: inline-block; background: var(--accent); color: #fff; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; padding: 4px 10px; border-radius: 3px; margin-bottom: 14px; text-transform: uppercase; }
+.modal-title { font-size: 22px; font-weight: 300; margin-bottom: 6px; letter-spacing: -.01em; }
+.modal-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 28px; }
+.modal-stat-row { display: flex; gap: 1px; background: var(--border); border-radius: 4px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 28px; }
+.modal-stat { flex: 1; background: var(--surface); padding: 14px 12px; }
+.modal-stat .lbl { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+.modal-stat .val { font-family: var(--mono); font-size: 18px; color: var(--ink); }
+.modal-section-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.modal-quote { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.modal-quote:last-child { border-bottom: none; }
+.modal-quote-page { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-bottom: 5px; }
+.modal-quote-text { font-size: 14px; line-height: 1.7; }
+.modal-reflect { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.modal-reflect:last-child { border-bottom: none; }
+.modal-reflect-text { font-size: 14px; line-height: 1.7; color: var(--ink); }
+.modal-none { font-size: 13px; color: var(--muted); padding: 12px 0; }
+.modal-close { margin-top: 28px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Reading Tracker / 讀書紀錄</div>
+  <h1>我的<span>書單</span></h1>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-label">Books</div><div class="stat-value" id="statBooks">0</div></div>
+  <div class="stat-item"><div class="stat-label">Total Days</div><div class="stat-value" id="statDays">0</div></div>
+  <div class="stat-item"><div class="stat-label">Quotes</div><div class="stat-value" id="statQuotes">0</div></div>
+  <div class="stat-item"><div class="stat-label">Reflections</div><div class="stat-value" id="statReflects">0</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">新增書本</div>
+  <div class="panel-body">
+    <input type="text" id="bookInput" placeholder="輸入書名…" maxlength="80">
+    <button class="btn" onclick="addBook()">+ 加入</button>
+  </div>
+</div>
+
+<div class="books-container">
+  <div class="section-label">書單</div>
+  <div id="bookList"></div>
+</div>
+
+<!-- Finish Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-badge">閱讀完畢</div>
+    <div class="modal-title" id="modalTitle">—</div>
+    <div class="modal-sub" id="modalSub">—</div>
+    <div class="modal-stat-row">
+      <div class="modal-stat"><div class="lbl">閱讀天數</div><div class="val" id="modalDays">0</div></div>
+      <div class="modal-stat"><div class="lbl">金句</div><div class="val" id="modalQuoteCount">0</div></div>
+      <div class="modal-stat"><div class="lbl">反思</div><div class="val" id="modalReflectCount">0</div></div>
+    </div>
+
+    <div class="modal-section-label">金句</div>
+    <div id="modalQuotes"></div>
+
+    <div style="margin-top:24px"></div>
+    <div class="modal-section-label">反思問題</div>
+    <div id="modalReflects"></div>
+
+    <button class="btn btn-dark modal-close" onclick="closeModalBtn()">關閉</button>
+  </div>
+</div>
+
+<script>
+let books = JSON.parse(localStorage.getItem('rbooks3') || '[]');
+// book: { id, title, readDays[], quotes[{id,page,text}], reflects[{id,text}], expanded, done, doneDate }
+let editingQuote = null;    // { bookId, quoteId }
+let editingReflect = null;  // { bookId, reflectId }
+
+function save() { localStorage.setItem('rbooks3', JSON.stringify(books)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDot(iso) { const p = iso.split('-'); return `${p[1]}/${p[2]}`; }
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+function addBook() {
+  const inp = document.getElementById('bookInput');
+  const title = inp.value.trim();
+  if (!title) return;
+  books.unshift({ id: uid(), title, readDays: [], quotes: [], reflects: [], expanded: false, done: false, doneDate: null });
+  save(); inp.value = ''; render();
+}
+
+function removeBook(id) {
+  if (!confirm('確定刪除這本書？')) return;
+  books = books.filter(b => b.id !== id);
+  save(); render();
+}
+
+function toggleExpand(id) {
+  const b = books.find(b => b.id === id);
+  if (b) { b.expanded = !b.expanded; render(); }
+}
+
+function checkIn(id) {
+  const b = books.find(b => b.id === id);
+  if (!b || b.done) return;
+  const today = todayStr();
+  if (b.readDays.includes(today)) return;
+  b.readDays.push(today);
+  save(); render();
+}
+
+function addQuote(id) {
+  const b = books.find(b => b.id === id);
+  if (!b) return;
+  const page = document.getElementById('qpage-' + id).value.trim();
+  const text = document.getElementById('qtext-' + id).value.trim();
+  if (!text) return;
+  b.quotes.push({ id: uid(), page: page || '—', text });
+  save();
+  document.getElementById('qpage-' + id).value = '';
+  document.getElementById('qtext-' + id).value = '';
+  render();
+}
+
+function confirmDelQuote(bookId, qid) {
+  if (confirm('確定刪除這條金句？')) removeQuote(bookId, qid);
+}
+function confirmDelReflect(bookId, rid) {
+  if (confirm('確定刪除這條反思？')) removeReflect(bookId, rid);
+}
+
+function removeQuote(bookId, qid) {
+  const b = books.find(b => b.id === bookId);
+  if (!b) return;
+  b.quotes = b.quotes.filter(q => q.id !== qid);
+  save(); render();
+}
+
+function startEditQuote(bookId, qid) {
+  editingQuote = { bookId, quoteId: qid };
+  editingReflect = null;
+  render();
+}
+function cancelEditQuote() { editingQuote = null; render(); }
+function saveEditQuote(bookId, qid) {
+  const b = books.find(b => b.id === bookId);
+  if (!b) return;
+  const q = b.quotes.find(q => q.id === qid);
+  if (!q) return;
+  const newPage = document.getElementById('eq-page-' + qid).value.trim();
+  const newText = document.getElementById('eq-text-' + qid).value.trim();
+  if (!newText) return;
+  q.page = newPage || '—';
+  q.text = newText;
+  editingQuote = null;
+  save(); render();
+}
+
+function addReflect(id) {
+  const b = books.find(b => b.id === id);
+  if (!b) return;
+  const text = document.getElementById('rtext-' + id).value.trim();
+  if (!text) return;
+  b.reflects.push({ id: uid(), text });
+  save();
+  document.getElementById('rtext-' + id).value = '';
+  render();
+}
+
+function removeReflect(bookId, rid) {
+  const b = books.find(b => b.id === bookId);
+  if (!b) return;
+  b.reflects = b.reflects.filter(r => r.id !== rid);
+  save(); render();
+}
+
+function startEditReflect(bookId, rid) {
+  editingReflect = { bookId, reflectId: rid };
+  editingQuote = null;
+  render();
+}
+function cancelEditReflect() { editingReflect = null; render(); }
+function saveEditReflect(bookId, rid) {
+  const b = books.find(b => b.id === bookId);
+  if (!b) return;
+  const r = b.reflects.find(r => r.id === rid);
+  if (!r) return;
+  const newText = document.getElementById('er-text-' + rid).value.trim();
+  if (!newText) return;
+  r.text = newText;
+  editingReflect = null;
+  save(); render();
+}
+
+function finishBook(id) {
+  const b = books.find(b => b.id === id);
+  if (!b) return;
+  if (!b.done) {
+    b.done = true;
+    b.doneDate = todayStr();
+    b.expanded = false;
+    save(); render();
+  }
+  openModal(id);
+}
+
+function openModal(id) {
+  const b = books.find(b => b.id === id);
+  if (!b) return;
+  document.getElementById('modalTitle').textContent = b.title;
+  document.getElementById('modalSub').textContent = b.doneDate ? '完成於 ' + b.doneDate : '';
+  document.getElementById('modalDays').textContent = b.readDays.length;
+  document.getElementById('modalQuoteCount').textContent = b.quotes.length;
+  document.getElementById('modalReflectCount').textContent = b.reflects.length;
+
+  const qEl = document.getElementById('modalQuotes');
+  if (b.quotes.length === 0) {
+    qEl.innerHTML = '<div class="modal-none">沒有金句</div>';
+  } else {
+    qEl.innerHTML = [...b.quotes].map(q =>
+      '<div class="modal-quote">' +
+      '<div class="modal-quote-page">p. ' + esc(q.page) + '</div>' +
+      '<div class="modal-quote-text">' + esc(q.text) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  const rEl = document.getElementById('modalReflects');
+  if (b.reflects.length === 0) {
+    rEl.innerHTML = '<div class="modal-none">沒有反思紀錄</div>';
+  } else {
+    rEl.innerHTML = b.reflects.map(r =>
+      '<div class="modal-reflect">' +
+      '<div class="modal-reflect-text">Q. ' + esc(r.text) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModalBtn();
+}
+function closeModalBtn() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+// ── Stats ────────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('statBooks').textContent = books.length;
+  document.getElementById('statDays').textContent = books.reduce((a, b) => a + b.readDays.length, 0);
+  document.getElementById('statQuotes').textContent = books.reduce((a, b) => a + b.quotes.length, 0);
+  document.getElementById('statReflects').textContent = books.reduce((a, b) => a + (b.reflects||[]).length, 0);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  updateStats();
+  const list = document.getElementById('bookList');
+  if (books.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📖</div><div class="empty-text">還沒有書，新增一本吧</div></div>';
+    return;
+  }
+
+  list.innerHTML = books.map((book, i) => {
+    const today = todayStr();
+    const checked = book.readDays.includes(today);
+    const days = book.readDays.length;
+    const reflects = book.reflects || [];
+    const sortedDays = [...book.readDays].sort().slice(-30);
+
+    const dotsHtml = sortedDays.map(d =>
+      '<div class="dot">' + fmtDot(d) + '<div class="dot-tip">' + d + '</div></div>'
+    ).join('');
+
+    const quotesHtml = book.quotes.length === 0
+      ? '<div class="list-empty">還沒有金句</div>'
+      : [...book.quotes].reverse().map(q => {
+          const isEditing = editingQuote && editingQuote.bookId === book.id && editingQuote.quoteId === q.id;
+          if (isEditing) {
+            return '<div class="list-item">' +
+              '<div class="item-meta"><span>p. ' + esc(q.page) + '</span></div>' +
+              '<div class="edit-wrap">' +
+              '<div class="page-row"><label>頁數</label><input type="number" id="eq-page-' + q.id + '" value="' + esc(q.page === '—' ? '' : q.page) + '" min="1"></div>' +
+              '<textarea id="eq-text-' + q.id + '" rows="3">' + esc(q.text) + '</textarea>' +
+              '<div class="edit-actions">' +
+              '<button class="btn-save" onclick="saveEditQuote(\'' + book.id + '\',\'' + q.id + '\')">儲存</button>' +
+              '<button class="btn-cancel" onclick="cancelEditQuote()">取消</button>' +
+              '</div></div></div>';
+          }
+          return '<div class="list-item">' +
+            '<div class="item-meta"><span>p. ' + esc(q.page) + '</span>' +
+            '<span>' +
+            '<button class="item-edit-btn" onclick="startEditQuote(\'' + book.id + '\',\'' + q.id + '\')">編輯</button>' +
+            '<button class="item-del" data-action="del-quote" data-book="' + book.id + '" data-id="' + q.id + '">✕ 刪除</button>' +
+            '</span></div>' +
+            '<div class="item-text">' + esc(q.text) + '</div></div>';
+        }).join('');
+
+    const reflectsHtml = reflects.length === 0
+      ? '<div class="list-empty">還沒有反思問題</div>'
+      : [...reflects].reverse().map(r => {
+          const isEditing = editingReflect && editingReflect.bookId === book.id && editingReflect.reflectId === r.id;
+          if (isEditing) {
+            return '<div class="list-item">' +
+              '<div class="item-meta reflect"><span>Q.</span></div>' +
+              '<div class="edit-wrap">' +
+              '<textarea id="er-text-' + r.id + '" rows="3">' + esc(r.text) + '</textarea>' +
+              '<div class="edit-actions">' +
+              '<button class="btn-save" onclick="saveEditReflect(\'' + book.id + '\',\'' + r.id + '\')">儲存</button>' +
+              '<button class="btn-cancel" onclick="cancelEditReflect()">取消</button>' +
+              '</div></div></div>';
+          }
+          return '<div class="list-item">' +
+            '<div class="item-meta reflect"><span>Q.</span>' +
+            '<span>' +
+            '<button class="item-edit-btn" onclick="startEditReflect(\'' + book.id + '\',\'' + r.id + '\')">編輯</button>' +
+            '<button class="item-del" data-action="del-reflect" data-book="' + book.id + '" data-id="' + r.id + '">✕ 刪除</button>' +
+            '</span></div>' +
+            '<div class="item-text">' + esc(r.text) + '</div></div>';
+        }).join('');
+
+    return (
+      '<div class="book-card' + (book.done ? ' done' : '') + '">' +
+
+      // ── Collapsed row (always visible) ──
+      '<div class="book-row" onclick="toggleExpand(\'' + book.id + '\')">' +
+        '<div class="book-idx">' + String(i+1).padStart(2,'0') + '</div>' +
+        '<div class="book-info">' +
+          '<div class="book-title">' + esc(book.title) + '</div>' +
+          '<div class="book-chips">' +
+            '<span class="chip green">📅 ' + days + ' 天</span>' +
+            '<span class="chip">💬 ' + book.quotes.length + ' 金句</span>' +
+            '<span class="chip">🤔 ' + reflects.length + ' 反思</span>' +
+            (book.done ? '<span class="chip done-tag">✓ 完讀</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="row-right">' +
+          '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();removeBook(\'' + book.id + '\')">✕</button>' +
+          '<span class="chevron' + (book.expanded ? ' open' : '') + '">▼</span>' +
+        '</div>' +
+      '</div>' +
+
+      // ── Expanded detail ──
+      (book.expanded ? (
+        '<div class="book-detail">' +
+
+        // Check-in
+        '<div class="checkin-strip">' +
+          '<div class="checkin-info">' +
+            '<div class="checkin-label">' + (checked ? '✓ 今天已打卡' : '今天讀了嗎？') + '</div>' +
+            '<div class="checkin-sub">累計 ' + days + ' 天</div>' +
+          '</div>' +
+          '<button class="btn-checkin' + (checked ? ' checked' : '') + '" onclick="checkIn(\'' + book.id + '\')">' +
+            (checked ? '已完成' : '+ 打卡') + '</button>' +
+        '</div>' +
+
+        // Day dots
+        (sortedDays.length > 0 ?
+          '<div class="section-wrap"><div class="sub-label">閱讀天紀錄</div><div class="dots-grid">' + dotsHtml + '</div></div>'
+          : '') +
+
+        // Quote input
+        '<div class="section-wrap">' +
+          '<div class="sub-label">新增金句</div>' +
+          '<div class="page-row"><label>頁數</label><input type="number" id="qpage-' + book.id + '" placeholder="42" min="1"></div>' +
+          '<textarea id="qtext-' + book.id + '" placeholder="輸入金句…" rows="2"></textarea>' +
+          '<button class="btn" style="margin-top:8px" onclick="addQuote(\'' + book.id + '\')">+ 儲存金句</button>' +
+          '<div style="margin-top:16px"><div class="sub-label">金句列表</div><div class="item-list">' + quotesHtml + '</div></div>' +
+        '</div>' +
+
+        // Reflect input
+        '<div class="section-wrap">' +
+          '<div class="sub-label">新增反思問題</div>' +
+          '<textarea id="rtext-' + book.id + '" placeholder="想到什麼問題或討論點…" rows="2"></textarea>' +
+          '<button class="btn" style="margin-top:8px" onclick="addReflect(\'' + book.id + '\')">+ 儲存反思</button>' +
+          '<div style="margin-top:16px"><div class="sub-label">反思列表</div><div class="item-list">' + reflectsHtml + '</div></div>' +
+        '</div>' +
+
+        // Finish button
+        '<div class="finish-row">' +
+          (book.done
+            ? '<button class="btn btn-ghost" onclick="openModal(\'' + book.id + '\')">📖 回顧本書</button>'
+            : '<button class="btn btn-dark" onclick="finishBook(\'' + book.id + '\')">✓ 閱讀完畢 · 結算</button>'
+          ) +
+        '</div>' +
+
+        '</div>'
+      ) : '') +
+
+      '</div>'
+    );
+  }).join('');
+}
+
+document.getElementById('bookInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addBook();
+});
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const bookId = btn.dataset.book;
+  const id = btn.dataset.id;
+
+  if (action === 'del-quote' || action === 'del-reflect') {
+    // Show inline confirm
+    if (btn.dataset.confirming === '1') {
+      // Second click — execute
+      if (action === 'del-quote') removeQuote(bookId, id);
+      else removeReflect(bookId, id);
+    } else {
+      // First click — ask
+      btn.dataset.confirming = '1';
+      const original = btn.textContent;
+      btn.textContent = '確定刪除？';
+      btn.style.color = '#c0392b';
+      btn.style.fontWeight = '500';
+      setTimeout(() => {
+        if (btn.dataset.confirming === '1') {
+          btn.dataset.confirming = '';
+          btn.textContent = original;
+          btn.style.color = '';
+          btn.style.fontWeight = '';
+        }
+      }, 3000);
+    }
+  }
+});
+
+render();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+</body>
+</html>
